@@ -59,7 +59,26 @@ gitSync:
     sshSecret: "airflow-ssh-git-secret"
 ```
 
-9.  Deploy helm charm using values fileL
+9. Configure ingress, for example:
+
+```
+ingress:
+  enabled: true
+  apiVersion: networking.k8s.io/v1
+  web:
+    annotations: 
+        kubernetes.io/ingress.class: "nginx"
+        kubernetes.io/tls-acme: "true"
+        cert-manager.io/cluster-issuer: acme
+    labels: {}
+    path: ""
+    host: "airflow.qxmips.com"
+    tls:
+      enabled: true
+      secretName: "airflow-le-cert"
+```
+
+10.  Deploy helm chart using the resulting  values file:
 
 ```
 helm install airflow airflow-stable/airflow  -n airflow  --version "8.5.2"  --values ./values.yaml
