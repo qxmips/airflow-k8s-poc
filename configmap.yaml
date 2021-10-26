@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-cfg-init
+  namespace: airflow
+data:
+  adminEmail: "admin@opsfleet.com"
+  AWS_ACCESS_KEY_ID: ""
+  AWS_S3_REGION: ""
+ 

@@ -1,0 +1,267 @@
+airflow:
+  legacyCommands: false
+  image:
+    repository: apache/airflow
+    tag: 2.1.2-python3.8
+    pullPolicy: IfNotPresent
+    pullSecret: ""
+    uid: 50000
+    gid: 0
+  executor: KubernetesExecutor
+  fernetKey: "XFoVOT9xLGX8ZkDgHmqxDxFrGGRhfL7sV7QCgTpDLu4="
+  webserverSecretKey: "replacereplacereplacereplace"
+  config:
+    AIRFLOW__KUBERNETES__IN_CLUSTER: "True"
+    AIRFLOW__KUBERNETES__DELETE_WORKER_PODS: "True"
+    AIRFLOW__KUBERNETES__DELETE_WORKER_PODS_ON_FAILURE: "False"
+    AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+    AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: "s3://qxmips-airflow-logs/airflow/logs"
+    AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: "aws_default"
+  users:
+    - username: admin
+      password:  ${ADMIN_PASSWORD}
+      role: Admin
+      email: ${ADMIN_EMAIL}
+      firstName: admin
+      lastName: admin
+  usersTemplates: 
+    ADMIN_PASSWORD:
+      kind: secret
+      name: airflow-secret-init
+      key: adminPassword
+    ADMIN_EMAIL:
+      kind: configmap
+      name: airflow-cfg-init
+      key: adminEmail
+  usersUpdate: true
+  connections: 
+    - id: aws_default
+      type: aws
+    - id: AWSKeysExample
+      type: aws
+      description: AWSKeysExample
+      extra: |-
+        { "aws_access_key_id": "${AWS_ACCESS_KEY_ID}",
+          "aws_secret_access_key": "${AWS_ACCESS_KEY}",
+          "region_name": "us-east-1" }
+  connectionsTemplates:
+    AWS_ACCESS_KEY_ID:
+      kind: configmap
+      name: airflow-cfg-init
+      key: AWS_ACCESS_KEY_ID
+    AWS_ACCESS_KEY:
+      kind: secret
+      name: airflow-secret-init
+      key: AWS_ACCESS_KEY
+    AWS_S3_REGION:
+      kind: configmap
+      name: airflow-cfg-init
+      key: AWS_S3_REGION
+  connectionsUpdate: false
+  variables: []
+  variablesTemplates: {}
+  variablesUpdate: true
+  pools: []
+  poolsUpdate: true
+  defaultNodeSelector: {}
+  defaultAffinity: {}
+  defaultTolerations: []
+  defaultSecurityContext:
+    fsGroup: 0
+  podAnnotations: {}
+  extraPipPackages: 
+      - "pyspark==3.1.1"
+  dbMigrations:
+    enabled: true
+    safeToEvict: true
+    checkInterval: 300
+  sync:
+    safeToEvict: true
+scheduler:
+  replicas: 1
+  safeToEvict: true
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 5
+  extraPipPackages: []
+  extraVolumeMounts: []
+  extraVolumes: []
+  extraInitContainers: []
+web:
+  webserverConfig:
+    stringOverride: ""
+    existingSecret: ""
+  replicas: 1
+  safeToEvict: true
+  service:
+    annotations: {}
+    sessionAffinity: "None"
+    sessionAffinityConfig: {}
+    type: ClusterIP
+    externalPort: 8080
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    nodePort:
+      http: ""
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  extraPipPackages: []
+  extraVolumeMounts: []
+  extraVolumes: []
+workers:
+  enabled: false
+flower:
+  enabled: false
+redis:
+  enabled: false
+logs:
+  path: /opt/airflow/logs
+  persistence:
+    enabled: false
+    existingClaim: ""
+    subPath: ""
+    storageClass: ""
+    accessMode: ReadWriteMany
+    size: 1Gi
+dags:
+  path: /opt/airflow/dags
+  persistence:
+    enabled: false
+    existingClaim: ""
+    subPath: ""
+    storageClass: ""
+    accessMode: ReadOnlyMany
+    size: 1Gi
+  gitSync:
+    enabled: true
+    repo:  "https://github.com/qxmips/dag.git" #"git@github.com:qxmips/test-dags.git"
+    branch: "master"
+    revision: "HEAD"
+    syncWait: 60
+    sshSecret: "airflow-secret-init"
+    sshSecretKey: "id_rsa"
+    image:
+      repository: k8s.gcr.io/git-sync/git-sync
+      tag: v3.2.2
+      pullPolicy: IfNotPresent
+      uid: 65533
+      gid: 65533
+    resources: {}
+    syncTimeout: 120
+    httpSecret: ""
+    httpSecretUsernameKey: username
+    httpSecretPasswordKey: password
+    sshKnownHosts: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+    maxFailures: 0
+ingress:
+  enabled: true
+  apiVersion: networking.k8s.io/v1
+  web:
+    annotations: {}
+    labels: {}
+    path: ""
+    host: "airflow.qxmips.com"
+    tls:
+      enabled: false
+      secretName: ""
+    precedingPaths: []
+    succeedingPaths: []
+rbac:
+  create: true
+  events: true
+serviceAccount:
+  create: true
+  name: "airflow"
+  annotations: 
+    eks.amazonaws.com/role-arn: "arn:aws:iam::131970628332:role/airflow20211025170151352700000001"
+extraManifests: []
+pgbouncer:
+  enabled: true
+  image:
+    repository: ghcr.io/airflow-helm/pgbouncer
+    tag: 1.15.0-patch.0
+    pullPolicy: IfNotPresent
+    uid: 1001
+    gid: 1001
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  securityContext: {}
+  labels: {}
+  podLabels: {}
+  annotations: {}
+  podAnnotations: {}
+  safeToEvict: true
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable:
+    minAvailable:
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 15
+    failureThreshold: 3
+  terminationGracePeriodSeconds: 120
+  maxClientConnections: 100
+  poolSize: 20
+  logDisconnections: 0
+  logConnections: 0
+  clientSSL:
+    mode: prefer
+    ciphers: normal
+    caFile:
+      existingSecret: ""
+      existingSecretKey: root.crt
+    keyFile:
+      existingSecret: ""
+      existingSecretKey: client.key
+    certFile:
+      existingSecret: ""
+      existingSecretKey: client.crt
+  serverSSL:
+    mode: prefer
+    ciphers: normal
+    caFile:
+      existingSecret: ""
+      existingSecretKey: root.crt
+    keyFile:
+      existingSecret: ""
+      existingSecretKey: server.key
+    certFile:
+      existingSecret: ""
+      existingSecretKey: server.crt
+postgresql:
+  enabled: true
+  postgresqlDatabase: airflow
+  postgresqlUsername: postgres
+  postgresqlPassword: airflow
+  existingSecret: ""
+  existingSecretKey: "postgresql-password"
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+  master:
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+    podAnnotations:
+      cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+
